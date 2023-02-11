@@ -17,14 +17,6 @@
   <!-- 폰트 -->
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
   <title>오노추</title>
-<!--  <iframe width="717" height="538" src="https://www.youtube.com/embed/xgvckGs6xhU"-->
-<!--          title="[MV] KIM DONG RYUL(김동률) _ Departure(출발)" frameborder="0"-->
-<!--          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"-->
-<!--          allowfullscreen></iframe>-->
-<!--  <iframe width="956" height="538" src="https://www.youtube.com/embed/6LDg0YGYVw4"-->
-<!--          title="[MV] 가호 - '시작' ＜이태원 클라쓰(Itaewon class)＞ OST Part.2♪" frameborder="0"-->
-<!--          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"-->
-<!--          allowfullscreen></iframe>-->
 
 
   <style>
@@ -101,17 +93,17 @@
           height: 250px;
       }
 
-      .detailInfo > .writerId {
-          float: left;
-      }
+      /*.detailInfo > .writerId {*/
+      /*    float: left;*/
+      /*}*/
 
-      .detailInfo > .star {
-          float: right;
-      }
+      /*.detailInfo > .star {*/
+      /*    float: right;*/
+      /*}*/
 
-      .detailInfo > hr {
-          clear: both;
-      }
+      /*.detailInfo > hr {*/
+      /*    clear: both;*/
+      /*}*/
 
       .replyInfo {
           width: 650px;
@@ -127,55 +119,22 @@
       }
   </style>
   <script>
-      // let url_num = document.location.href.split("/")[4];
-
       $(document).ready(function () {
-          show_inf()
-          show_comment()
+          show_comment();
       });
 
-      function show_inf() {
-          $.ajax({
-              type: "GET",
-              url: "/inf",
-              data: {},
-              success: function (response) {
-                  let rows = response['music_inf']
-                  for (let i = 0; i < rows.length; i++) {
-                      let link = rows[i]['link']
-                      let name = rows[i]['name']
-                      let comment = rows[i]['comment']
-                      let star = rows[i]['grade']
-
-                      let star_image = '⭐'.repeat(star)
-
-                      if (url_num === link) {
-                          let temp_html = `<iframe width="560" height="315" src="{link}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-                                        <span><h1>플레이리스트 제목</h1></span>
-                                        <hr/>
-                                        <span class="writerId"><h5>${name}</h5></span>
-                                        <span class="star"><h5>${star_image}</h5></span>
-                                        <hr/>
-                                        <span><h6>${comment}</h6></span>`
-                          $('#').append(temp_html)
-                      }
-                  }
-              }
-          });
-      }
-
       function input_comment() {
-
+          let num = '{{list.num}}'
+          let nick = '{{nickname}}'
           let comment = $('#comment').val()
-
+          console.log(num)
           if (comment === '') {
               alert('댓글 내용을 입력해주세요.')
           } else {
-
               $.ajax({
                   type: 'POST',
-                  url: '/detail',
-                  data: {comment_give: comment},
+                  url: '/in_comment',
+                  data: {num_give: num, nick_give: nick, comment_give: comment},
                   success: function (response) {
                       alert(response['msg'])
                       window.location.reload()
@@ -185,26 +144,24 @@
       }
 
       function show_comment() {
+          let num = '{{list.num}}'
           $.ajax({
-              type: "GET",
-              url: "/detail",
-              data: {},
+              type: "POST",
+              url: "/show_comment",
+              data: {num_give: num},
               success: function (response) {
-                  let rows = response['comment_input']
-
+                  let rows = response['smn_list']
+                  let temp_html = '';
                   for (let i = 0; i < rows.length; i++) {
-                      let link = rows[i]['link']
+                      let comment_nick = rows[i]['nick']
+                      console.log(comment_nick)
+
                       let comment = rows[i]['comment']
-
-                      if (url_num === link) {
-                          let temp_html = ` <div class="card-body">
-                                                <   h5 class="card-title">{{nickname}}</h5>
-                                                <p class="card-text">${comment}</p>
-                                            </div> `
-
-                          $("#comment_list").append(temp_html)
-                      }
+                      console.log(comment)
+                      temp_html += `<h5 id="comment_nick">${comment_nick}</h5>
+                                    <p id="comment" >${comment}</p>`
                   }
+                  $('#card-body').append(temp_html)
               }
           });
       }
@@ -225,8 +182,11 @@
       <img src="#" class="thumbnail" alt="">
     </section>
     <section class="detailInfo">
+      <h1>{{list.num}}</h1>
       <span><h1>{{list.title}}</h1></span>
-      <a href="{{list.url}}">음악듣기</a>
+      <embed width="560" height="315" src="{{list.url}}" title="YouTube video player" frameborder="0"
+             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+             allowfullscreen></embed>
       <hr/>
       <span class="writerId"><h5>{{nickname}}</h5></span>
       <span class="star"><h5>{{list.star}}</h5></span>
@@ -238,29 +198,11 @@
     <section class="insertReply">
       <div class="mb-3">
         <div class="input-group mb-3">
-          <input type="text" class="form-control" placeholder="이 플레이리스트에 대해 코멘트를 남겨주세요🎵">
-          <button class="btn btn-outline-secondary" id="writeReply">등록하기</button>
+          <input id="comment" type="text" class="form-control" placeholder="이 플레이리스트에 대해 코멘트를 남겨주세요🎵">
+          <button onclick="input_comment()" class="btn btn-outline-secondary" id="writeReply">등록하기</button>
         </div>
-      </div>
-      <hr/>
-    </section>
-    <section class="readReply">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">닉네임</h5>
-          <p class="card-text">코멘트</p>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">닉네임</h5>
-          <p class="card-text">코멘트</p>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">닉네임</h5>
-          <p class="card-text">코멘트</p>
+        <div class="card-body" id="card-body">
+
         </div>
       </div>
     </section>

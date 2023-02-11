@@ -279,5 +279,29 @@ def list_post():
     return jsonify({'msg': '등록완료'})
 
 
+@app.route('/in_comment', methods=["POST"])
+def input_comment():
+    num_receive = request.form['num_give']
+    nick_name_receive = request.form['nick_give']
+    comment_receive = request.form['comment_give']
+
+    doc = {
+        'num': num_receive,
+        'nick': nick_name_receive,
+        'comment': comment_receive
+    }
+
+    db.comment.insert_one(doc)
+    return jsonify({'msg': '댓글 등록 완료'})
+
+
+@app.route('/show_comment', methods=["POST"])
+def show_comment():
+    num_receive = request.form['num_give']
+    semi_list = list(db.comment.find({'num': num_receive}, {'_id': False}))
+    print(semi_list)
+    return jsonify({'smn_list': semi_list})
+
+
 if __name__ == '__main__':
     app.run('0.0.0.0', port=5000, debug=True)
