@@ -7,12 +7,25 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+  <!--    css부트스크랩-->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
           integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
           crossorigin="anonymous"></script>
+  <!--    jquery쿠키-->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
   <!-- 폰트 -->
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
   <title>오노추</title>
+<!--  <iframe width="717" height="538" src="https://www.youtube.com/embed/xgvckGs6xhU"-->
+<!--          title="[MV] KIM DONG RYUL(김동률) _ Departure(출발)" frameborder="0"-->
+<!--          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"-->
+<!--          allowfullscreen></iframe>-->
+<!--  <iframe width="956" height="538" src="https://www.youtube.com/embed/6LDg0YGYVw4"-->
+<!--          title="[MV] 가호 - '시작' ＜이태원 클라쓰(Itaewon class)＞ OST Part.2♪" frameborder="0"-->
+<!--          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"-->
+<!--          allowfullscreen></iframe>-->
+
 
   <style>
       * {
@@ -114,12 +127,93 @@
       }
   </style>
   <script>
+      // let url_num = document.location.href.split("/")[4];
+
+      $(document).ready(function () {
+          show_inf()
+          show_comment()
+      });
+
+      function show_inf() {
+          $.ajax({
+              type: "GET",
+              url: "/inf",
+              data: {},
+              success: function (response) {
+                  let rows = response['music_inf']
+                  for (let i = 0; i < rows.length; i++) {
+                      let link = rows[i]['link']
+                      let name = rows[i]['name']
+                      let comment = rows[i]['comment']
+                      let star = rows[i]['grade']
+
+                      let star_image = '⭐'.repeat(star)
+
+                      if (url_num === link) {
+                          let temp_html = `<iframe width="560" height="315" src="{link}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                                        <span><h1>플레이리스트 제목</h1></span>
+                                        <hr/>
+                                        <span class="writerId"><h5>${name}</h5></span>
+                                        <span class="star"><h5>${star_image}</h5></span>
+                                        <hr/>
+                                        <span><h6>${comment}</h6></span>`
+                          $('#').append(temp_html)
+                      }
+                  }
+              }
+          });
+      }
+
+      function input_comment() {
+
+          let comment = $('#comment').val()
+
+          if (comment === '') {
+              alert('댓글 내용을 입력해주세요.')
+          } else {
+
+              $.ajax({
+                  type: 'POST',
+                  url: '/detail',
+                  data: {comment_give: comment},
+                  success: function (response) {
+                      alert(response['msg'])
+                      window.location.reload()
+                  }
+              });
+          }
+      }
+
+      function show_comment() {
+          $.ajax({
+              type: "GET",
+              url: "/detail",
+              data: {},
+              success: function (response) {
+                  let rows = response['comment_input']
+
+                  for (let i = 0; i < rows.length; i++) {
+                      let link = rows[i]['link']
+                      let comment = rows[i]['comment']
+
+                      if (url_num === link) {
+                          let temp_html = ` <div class="card-body">
+                                                <   h5 class="card-title">{{nickname}}</h5>
+                                                <p class="card-text">${comment}</p>
+                                            </div> `
+
+                          $("#comment_list").append(temp_html)
+                      }
+                  }
+              }
+          });
+      }
   </script>
 </head>
 <body>
 <div class="header">
   <div class="icon"><!-- 추후 아이콘 들어갈 자리 --></div>
-  <div class="showUser"><span>{id}님 환영합니다!</span></div>
+  <div class="showUser"><span>{{nickname}}님 환영합니다!</span></div>
 </div>
 <div class="mytitle">
   <h1>오노추: 오늘의 노래 추천</h1>
@@ -130,17 +224,14 @@
     <section class="detailImg">
       <img src="#" class="thumbnail" alt="">
     </section>
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/mBXBOLG06Wc" title="YouTube video player"
-            frameborder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen></iframe>
     <section class="detailInfo">
-      <span><h1>플레이리스트 제목</h1></span>
+      <span><h1>{{list.title}}</h1></span>
+      <a href="{{list.url}}">음악듣기</a>
       <hr/>
-      <span class="writerId"><h5>작성자 id</h5></span>
-      <span class="star"><h5>별점</h5></span>
+      <span class="writerId"><h5>{{nickname}}</h5></span>
+      <span class="star"><h5>{{list.star}}</h5></span>
       <hr/>
-      <span><h6>코멘트</h6></span>
+      <span><h6>{{list.comment}}</h6></span>
     </section>
   </div>
   <div class="replyInfo">

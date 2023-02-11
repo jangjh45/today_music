@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, url_for, redirect
 from bs4 import BeautifulSoup
 import requests
+
 app = Flask(__name__)
 
 import certifi
@@ -152,7 +153,6 @@ def check_email():
 def api_login():
     id_receive = request.form['id_give']
     pw_receive = request.form['pw_give']
-
     # 최초 DB가 없을때도 실행하기 위해 추가함
     if id_receive == '' or pw_receive == '':
         return jsonify({'ans': 'fail', 'msg': '공백이 있습니다'})
@@ -210,11 +210,29 @@ def api_valid():
         return jsonify({'result': 'fail', 'msg': '로그인 정보가 존재하지 않습니다.'})
 
 
-@app.route("/show_list", methods=["GET"])
-def list_get():
-    pl_list = list(db.list.find({}, {'_id': False}))
+@app.route('/listget', methods=["GET"])
+def list_get_num():
+    token_receive = request.cookies.get('mytoken')
+    num = request.args.get('num')
+    print(num)
+    try:
+        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+        user_info = db.user.find_one({"id": payload['id']})
+        list = db.list.find_one({'num': int(num)})
+        print(list)
+        return render_template('detail.html', nickname=user_info["nick"], list=list)
+    except jwt.ExpiredSignatureError:
+        return redirect(url_for("login", msg="로그인 시간이 만료되었습니다."))
+    except jwt.exceptions.DecodeError:
+        return redirect(url_for("login", msg="로그인 정보가 존재하지 않습니다."))
 
-    return jsonify({'pl_list': pl_list})
+
+@app.route("/show_list", methods=["POST"])
+def list_get():
+    pl_list = list(db.list.find({}, {'_id': False}).sort([{'num', -1}]))
+    # print(pl_list)
+    return jsonify(pl_list)
+
 
 @app.route("/make_list", methods=["POST"])
 def list_post():
@@ -224,11 +242,12 @@ def list_post():
     url_receive = request.form['url_give']
     url = url_receive
 
-    if len(list(db.board.find({}, {'_id': False}))) == 0:
+    if len(list(db.list.find({}, {'_id': False}))) == 0:
         count = 1
     else:
-        addlist_num = list(db.board.find({}, {}).sort([{'_id', -1}]))
-        dbcount = addlist_num[0]['_id']
+        addlist_num = list(db.list.find({}, {}).sort([{'num', -1}]))
+        # print(addlist_num)
+        dbcount = addlist_num[0]['num']
         count = dbcount + 1
 
     data = requests.get(url, headers=headers)
@@ -248,8 +267,6 @@ def list_post():
     }
     db.list.insert_one(doc)
     return jsonify({'title': title})
-
-
 
 
 if __name__ == '__main__':
