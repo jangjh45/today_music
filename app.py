@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, url_for, redirect
-
+from bs4 import BeautifulSoup
+import requests
 app = Flask(__name__)
 
 import certifi
@@ -10,6 +11,9 @@ import pymongo
 
 client = pymongo.MongoClient("mongodb+srv://test:sparta@cluster0.sk4ckqt.mongodb.net/?retryWrites=true&w=majority")
 db = client.today_music
+
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36'}
 
 # JWT 토큰을 만들 때 필요한 비밀문자열입니다. 아무거나 입력해도 괜찮습니다.
 # 이 문자열은 서버만 알고있기 때문에, 내 서버에서만 토큰을 인코딩(=만들기)/디코딩(=풀기) 할 수 있습니다.
@@ -150,7 +154,7 @@ def api_login():
     pw_receive = request.form['pw_give']
 
     # 최초 DB가 없을때도 실행하기 위해 추가함
-    if id_receive == '' or  pw_receive == '':
+    if id_receive == '' or pw_receive == '':
         return jsonify({'ans': 'fail', 'msg': '공백이 있습니다'})
 
     # 회원가입 때와 같은 방법으로 pw를 암호화합니다.
@@ -204,6 +208,48 @@ def api_valid():
         return jsonify({'result': 'fail', 'msg': '로그인 시간이 만료되었습니다.'})
     except jwt.exceptions.DecodeError:
         return jsonify({'result': 'fail', 'msg': '로그인 정보가 존재하지 않습니다.'})
+
+
+@app.route("/show_list", methods=["GET"])
+def list_get():
+    pl_list = list(db.list.find({}, {'_id': False}))
+
+    return jsonify({'pl_list': pl_list})
+
+@app.route("/make_list", methods=["POST"])
+def list_post():
+    nick_receive = request.form['nick_give']
+    star_receive = request.form['star_give']
+    comment_receive = request.form['comment_give']
+    url_receive = request.form['url_give']
+    url = url_receive
+
+    if len(list(db.board.find({}, {'_id': False}))) == 0:
+        count = 1
+    else:
+        addlist_num = list(db.board.find({}, {}).sort([{'_id', -1}]))
+        dbcount = addlist_num[0]['_id']
+        count = dbcount + 1
+
+    data = requests.get(url, headers=headers)
+    soup = BeautifulSoup(data.text, 'html.parser')
+
+    title = soup.select_one('meta[property="og:title"]')['content']
+    image = soup.select_one('meta[property="og:image"]')['content']
+
+    doc = {
+        'num': count,
+        'name': nick_receive,
+        'star': star_receive,
+        'comment': comment_receive,
+        'url': url_receive,
+        'title': title,
+        'image': image
+    }
+    db.list.insert_one(doc)
+    return jsonify({'title': title})
+
+
 
 
 if __name__ == '__main__':

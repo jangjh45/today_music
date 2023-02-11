@@ -10,7 +10,6 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
           integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
           crossorigin="anonymous"></script>
-  <script src="https://code.jquery.com/jquery-1.11.3.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
 
@@ -116,13 +115,13 @@
           listing();
       });
 
-      function listing(message) {
+      function listing() {
           $.ajax({
               type: 'GET',
-              url: '/movie',
+              url: '/show_list',
               data: {},
               success: function (response) {
-                  let rows = response['movies']
+                  let rows = response['pl_list']
                   for (let i = 0; i < rows.length; i++) {
                       let comment = rows[i]['comment']
                       let title = rows[i]['title']
@@ -132,18 +131,17 @@
 
                       let star_image = '⭐'.repeat(star)
 
-                      let temp_html = `<div class="col">
-                                            <div class="card h-100">
-                                                <img src="${image}"
-                                                     class="card-img-top">
-                                                <div class="card-body">
-                                                    <h5 class="card-title">${title}</h5>
-                                                    <p class="card-text">${desc}</p>
-                                                    <p>${star_image}</p>
-                                                    <p class="mycomment">${comment}</p>
-                                                </div>
-                                            </div>
-                                        </div>`
+                      let temp_html = ` <div class="row row-cols-1 row-cols-md-2 g-2" id="cards-box">
+        <div class="col">
+            <div class="card mb-2">
+              <img src="${image}" class="card-img-top" alt="...">
+              <div class="card-body">
+                <h5 class="card-title"><a href="detail.html">${title}</a></h5>
+                <p class="card-text">${star_image}</p>
+                <p class="card-text"><small class="text-muted">${comment}</small></p>
+              </div>
+            </div>
+    </div>`
                       $('#cards-box').append(temp_html)
                   }
               }
@@ -151,16 +149,17 @@
       }
 
       function posting() {
+          let nickname = '{{nickname}}'
           let url = $('#url').val()
           let star = $('#star').val()
           let comment = $('#comment').val()
 
           $.ajax({
               type: 'POST',
-              url: '/movie',
-              data: {url_give: url, star_give: star, comment_give: comment},
+              url: '/make_list',
+              data: {nick_give: nickname, url_give: url, star_give: star, comment_give: comment},
               success: function (response) {
-                  alert(response['msg'])
+                  console.log(response['title'])
                   window.location.reload()
               }
           });
@@ -186,7 +185,6 @@
 <div class="header">
   <div class="icon" style="border: 1px solid red"><!-- 추후 아이콘 들어갈 자리 --></div>
   <div class="showUser" style="border: 1px solid orange"><span>{{nickname}}님 환영합니다!</span></div>
-                <!--  로그인 토큰 삭제 버튼 (로그아웃)  -->
   <button type="button" style="margin: 5px; float: right" class="btn btn-primary "
           onclick="logout()">로그아웃
   </button>
@@ -222,16 +220,9 @@
 </div>
 <div class="mycards">
   <div class="row row-cols-1 row-cols-md-2 g-2" id="cards-box">
-    <div class="col">
-      <div class="card mb-2">
-        <img src="..." class="card-img-top" alt="...">
-        <div class="card-body">
-          <h5 class="card-title"><a href="">{유튜브 제목}</a></h5>
-          <p class="card-text">{별점}</p>
-          <p class="card-text"><small class="text-muted">{사용자 작성 코멘트}</small></p>
-        </div>
-      </div>
-    </div>
+
   </div>
+</div>
 </body>
+
 </html>
