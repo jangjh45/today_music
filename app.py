@@ -3,9 +3,11 @@ from flask import Flask, render_template, request, jsonify, url_for, redirect
 app = Flask(__name__)
 
 import certifi
+
 ca = certifi.where()
 
 import pymongo
+
 client = pymongo.MongoClient("mongodb+srv://test:sparta@cluster0.sk4ckqt.mongodb.net/?retryWrites=true&w=majority")
 db = client.today_music
 
@@ -43,19 +45,6 @@ def home():
         return redirect(url_for("login", msg="로그인 정보가 존재하지 않습니다."))
 
 
-@app.route('/board_add')
-def board_add():
-    token_receive = request.cookies.get('mytoken')
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        user_info = db.user.find_one({"id": payload['id']})
-        return render_template('board_add.html', nickname=user_info["nick"])
-    except jwt.ExpiredSignatureError:
-        return redirect(url_for("login", msg="로그인 시간이 만료되었습니다."))
-    except jwt.exceptions.DecodeError:
-        return redirect(url_for("login", msg="로그인 정보가 존재하지 않습니다."))
-
-
 @app.route('/login')
 def login():
     msg = request.args.get("msg")
@@ -69,7 +58,7 @@ def join():
 
 
 #################################
-##  로그인을 위한 API            ##
+##  회원가입을 위한 API            ##
 #################################
 # [회원가입 API]
 # id, pw, nickname을 받아서, mongoDB에 저장합니다.
@@ -77,14 +66,43 @@ def join():
 @app.route('/api/register', methods=['POST'])
 def api_register():
     id_receive = request.form['id_give']
-    pw_receive = request.form['pw_give']
+    password_receive = request.form['pw_give']
+    pwcf_receive = request.form['pwcf_give']
     nickname_receive = request.form['nickname_give']
-    # userstore_receive = request.form['userstore_give']
+    email_receive = request.form['email_give']
 
-    pw_hash = hashlib.sha256(pw_receive.encode('utf-8')).hexdigest()
+    res = db.users.find({}, {'_id': False})
+
+    # 최초 DB가 없을때도 실행하기 위해 추가함
+    if id_receive == '' or email_receive == '' or password_receive == '' or pwcf_receive == '':
+        return jsonify({'ans': 'fail', 'msg': '공백이 있습니다'})
+    elif '@' not in email_receive or '.' not in email_receive:
+        return jsonify({'ans': 'fail', 'msg': '이메일 형식이 아닙니다.'})
+    elif pwcf_receive != password_receive:
+        return jsonify({'ans': 'fail', 'msg': '비밀번호가 다릅니다'})
+
+    for list in res:
+        # 공백 처리, 해당 부분에서 약간의 오류를 발생시키면 html 스크립트 공백체크가 작동한다..
+        if id_receive == '' or email_receive == '' or password_receive == '' or pwcf_receive == '':
+            return jsonify({'ans': 'fail', 'msg': '공백이 있습니다'})
+        # 이메일 형식 체크 @, '.' 포함 여부 확인
+        elif '@' not in email_receive or '.' not in email_receive:
+            return jsonify({'ans': 'fail', 'msg': '이메일 형식이 아닙니다.'})
+        # 회원가입 시 중복 ID, Email 처리
+        elif list['name'] == id_receive or list['email'] == email_receive:
+            return jsonify({'ans': 'fail', 'msg': '이름 또는 이메일 중복!'})
+        # 2차 비밀번호 체크
+        elif pwcf_receive != password_receive:
+            return jsonify({'ans': 'fail', 'msg': '비밀번호가 다릅니다'})
+    PW = hashlib.sha256(password_receive.encode()).hexdigest()
+    PW2 = hashlib.sha256(pwcf_receive.encode()).hexdigest()
+    print(PW)
+    print(PW2)
+
+    pw_hash = hashlib.sha256(password_receive.encode('utf-8')).hexdigest()
 
     db.user.insert_one(
-        {'id': id_receive, 'pw': pw_hash, 'nick': nickname_receive})
+        {'id': id_receive, 'pw': pw_hash, 'nick': nickname_receive, 'email': email_receive})
     return jsonify({'result': 'success'})
 
 
@@ -96,9 +114,9 @@ def check_id():
     id_receive = request.form['id_give']
     user = db.user.find_one({'id': id_receive})
     if (user == None):
-        return jsonify({'msg': '1'})
+        return jsonify({'msg': '사용가능한 ID입니다.'})
     else:
-        return jsonify({'msg': '2'})
+        return jsonify({'msg': 'ID가 존재합니다.'})
 
 
 @app.route("/register/check_nick", methods=["POST"])
@@ -106,17 +124,34 @@ def check_nick():
     nick_receive = request.form['nick_give']
     user = db.user.find_one({'nick': nick_receive})
     if (user == None):
-        return jsonify({'msg': '1'})
+        return jsonify({'msg': '사용가능한 닉네임입니다.'})
     else:
-        return jsonify({'msg': '2'})
+        return jsonify({'msg': '닉네임이 존재합니다.'})
 
 
+@app.route("/register/check_email", methods=["POST"])
+def check_email():
+    email_receive = request.form['email_give']
+    user = db.user.find_one({'email': email_receive})
+    if (user == None):
+        return jsonify({'msg': '사용가능한 이메일입니다.'})
+    else:
+        return jsonify({'msg': '이메일이 존재합니다.'})
+
+
+#################################
+##  로그인을 위한 API            ##
+#################################
 # [로그인 API]
 # id, pw를 받아서 맞춰보고, 토큰을 만들어 발급합니다.
 @app.route('/api/login', methods=['POST'])
 def api_login():
     id_receive = request.form['id_give']
     pw_receive = request.form['pw_give']
+
+    # 최초 DB가 없을때도 실행하기 위해 추가함
+    if id_receive == '' or  pw_receive == '':
+        return jsonify({'ans': 'fail', 'msg': '공백이 있습니다'})
 
     # 회원가입 때와 같은 방법으로 pw를 암호화합니다.
     pw_hash = hashlib.sha256(pw_receive.encode('utf-8')).hexdigest()
@@ -169,7 +204,6 @@ def api_valid():
         return jsonify({'result': 'fail', 'msg': '로그인 시간이 만료되었습니다.'})
     except jwt.exceptions.DecodeError:
         return jsonify({'result': 'fail', 'msg': '로그인 정보가 존재하지 않습니다.'})
-
 
 
 if __name__ == '__main__':
