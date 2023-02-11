@@ -7,40 +7,44 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
-  <!--    css부트스크랩-->
+  <!-- css부트스트랩-->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
           integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
           crossorigin="anonymous"></script>
-  <!--    jquery쿠키-->
+  <!-- jquery쿠키-->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
   <!-- 폰트 -->
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
   <title>오노추</title>
-
 
   <style>
       * {
           font-family: 'Gowun Dodum', sans-serif;
       }
 
+      body > .header {
+          position: relative;
+          z-index: 1;
+      }
+
+      body > .mytitle {
+          position: relative;
+      }
+
       .header {
           width: 100%;
+          color: white;
       }
 
-      .header > div {
-          hegith: 50px;
-      }
-
-      .icon {
-          float: left;
-      }
-
-      .showUser {
+      .header > button {
           float: right;
-          width: 500px;
-          font-size: 20px;
-          text-align: right;
+          margin: 30px 60px 0 0;
+          color: white;
+      }
+
+      .header > button:hover {
+          font-weight: bold;
+          color: grey;
       }
 
       .showUser > span {
@@ -48,9 +52,11 @@
       }
 
       .mytitle {
+          top: -100px;
           width: 100%;
           height: 300px;
-          background-image: linear-gradient(0deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://wallpapercave.com/dwp1x/wp5694376.jpg');
+          margin-bottom: -100px;
+          background-image: linear-gradient(0deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://www.musicpressasia.com/wp-content/uploads/2022/01/Lofi-Girl-Launched-2021-Best-Tracks.-Music-Press-Asia.jpg');
           background-position: center;
           background-size: cover;
           color: white;
@@ -61,7 +67,7 @@
       }
 
       .mytitle > button {
-          width: 200px;
+          width: 150px;
           height: 50px;
           background-color: transparent;
           color: white;
@@ -71,7 +77,6 @@
       }
 
       .listDetail {
-          width: 95%;
           display: flex;
           margin: auto;
           padding: 50px 50px;
@@ -79,13 +84,9 @@
       }
 
       .linkInfo {
-          width: 400px;
+          width: 600px;
+          height: 100%;
           float: left;
-      }
-
-      .detailImg {
-          width: 400px;
-          height: 250px;
       }
 
       .detailInfo {
@@ -93,35 +94,52 @@
           height: 250px;
       }
 
-      /*.detailInfo > .writerId {*/
-      /*    float: left;*/
-      /*}*/
+      .detailInfo > hr {
+          clear: both;
+      }
 
-      /*.detailInfo > .star {*/
-      /*    float: right;*/
-      /*}*/
-
-      /*.detailInfo > hr {*/
-      /*    clear: both;*/
-      /*}*/
+      .detailInfo h1 {
+          margin-top: 30px;
+      }
 
       .replyInfo {
           width: 650px;
-          margin-left: 50px;
+          margin: 20px 0 0 30px;
       }
 
       .replyInfo .form-control {
           height: 50px;
       }
 
-      .readReply > .card {
+      #tempCard > .card {
           margin-bottom: 10px;
       }
+
   </style>
   <script>
       $(document).ready(function () {
+          loginChk();
           show_comment();
+          setStar();
       });
+
+      function setStar() {
+          let star_num = '{{list.star}}'
+          let star_image = '⭐'.repeat(star_num);
+          let temp_html = `<h5>${star_image}</h5>`;
+          $('#setStar').append(temp_html)
+      }
+
+      function loginChk() {
+          let nickname = '{{nickname}}'
+          let user_html = ''
+          if (nickname != null) {
+              user_html = `<button type="button" class="btn btn-outline-white" onclick="logout()">로그아웃</button>`
+          } else {
+              user_html = `<button type="button" class="btn btn-outline-white" onclick="window.location.href ='/login'">로그인</button>`
+          }
+          $('#header').append(user_html)
+      }
 
       function input_comment() {
           let num = '{{list.num}}'
@@ -154,42 +172,44 @@
                   let temp_html = '';
                   for (let i = 0; i < rows.length; i++) {
                       let comment_nick = rows[i]['nick']
-                      console.log(comment_nick)
-
                       let comment = rows[i]['comment']
-                      console.log(comment)
-                      temp_html += `<h5 id="comment_nick">${comment_nick}</h5>
-                                    <p id="comment" >${comment}</p>`
+                      temp_html += `<div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">${comment_nick}</h5>
+                                            <p class="card-text">${comment}</p>
+                                        </div>
+                                    </div>`
                   }
-                  $('#card-body').append(temp_html)
+                  $('#tempCard').append(temp_html)
               }
           });
+      }
+
+      function logout() {
+          $.removeCookie('mytoken');
+          alert('로그아웃!')
+          window.location.href = '/login'
       }
   </script>
 </head>
 <body>
-<div class="header">
-  <div class="icon"><!-- 추후 아이콘 들어갈 자리 --></div>
-  <div class="showUser"><span>{{nickname}}님 환영합니다!</span></div>
+<div class="header" id="header">
 </div>
 <div class="mytitle">
   <h1>오노추: 오늘의 노래 추천</h1>
-  <button onClick="location.href='index.html'">이전 페이지</button>
+  <button onClick="window.location.href = '/'">이전 페이지</button>
 </div>
 <div class="listDetail">
   <div class="linkInfo">
-    <section class="detailImg">
-      <img src="#" class="thumbnail" alt="">
-    </section>
     <section class="detailInfo">
-      <h1>{{list.num}}</h1>
-      <span><h1>{{list.title}}</h1></span>
+      <p hidden>{{list.num}}</p>
       <embed width="560" height="315" src="{{list.url}}" title="YouTube video player" frameborder="0"
              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
              allowfullscreen></embed>
+      <span><h1>{{list.title}}</h1></span>
       <hr/>
-      <span class="writerId"><h5>{{nickname}}</h5></span>
-      <span class="star"><h5>{{list.star}}</h5></span>
+      <span class="writerId"><h5>@{{nickname}}</h5></span>
+      <span class="star" id="setStar"></span>
       <hr/>
       <span><h6>{{list.comment}}</h6></span>
     </section>
@@ -201,8 +221,7 @@
           <input id="comment" type="text" class="form-control" placeholder="이 플레이리스트에 대해 코멘트를 남겨주세요🎵">
           <button onclick="input_comment()" class="btn btn-outline-secondary" id="writeReply">등록하기</button>
         </div>
-        <div class="card-body" id="card-body">
-
+        <div id="tempCard">
         </div>
       </div>
     </section>

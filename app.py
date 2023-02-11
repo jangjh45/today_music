@@ -302,6 +302,24 @@ def show_comment():
     print(semi_list)
     return jsonify({'smn_list': semi_list})
 
+@app.route("/list/modify", methods=["POST"])
+def list_modify():
+    num_receive = request.form['num_give']
+    star_receive = request.form['star_give']
+    comment_receive = request.form['comment_give']
+    print(num_receive, star_receive, comment_receive)
+    print(type(num_receive))
+    print(type(star_receive))
+    print(type(comment_receive))
+    db.list.update_one({'num': int(num_receive)}, {'$set': {'star': star_receive}})
+    db.list.update_one({'num': int(num_receive)}, {'$set': {'comment': comment_receive}})
+    return jsonify({'msg': '코멘트 수정 완료!'})
+
+@app.route("/list/delete", methods=["POST"])
+def list_delete():
+    num_receive = request.form['num_give']
+    db.list.delete_one({'num': int(num_receive)})
+    return jsonify({'msg': '삭제 완료'})
 
 if __name__ == '__main__':
     app.run('0.0.0.0', port=5000, debug=True)
