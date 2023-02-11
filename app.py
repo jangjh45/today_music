@@ -240,7 +240,17 @@ def list_post():
     star_receive = request.form['star_give']
     comment_receive = request.form['comment_give']
     url_receive = request.form['url_give']
-    url = url_receive
+
+    con_url = url_receive.replace('watch?v=', 'embed/')
+
+    if url_receive == '' or 'https' not in url_receive or url_receive.upper() == url_receive.lower():
+        return jsonify({'msg': '유효한 주소가 아닙니다.'})
+
+    if star_receive == '':
+        return jsonify({'msg': '별점을 선택해주세요!'})
+
+    if comment_receive == '':
+        return jsonify({'msg': '코멘트를 작성해주세요!'})
 
     if len(list(db.list.find({}, {'_id': False}))) == 0:
         count = 1
@@ -250,7 +260,7 @@ def list_post():
         dbcount = addlist_num[0]['num']
         count = dbcount + 1
 
-    data = requests.get(url, headers=headers)
+    data = requests.get(url_receive, headers=headers)
     soup = BeautifulSoup(data.text, 'html.parser')
 
     title = soup.select_one('meta[property="og:title"]')['content']
@@ -261,12 +271,12 @@ def list_post():
         'name': nick_receive,
         'star': star_receive,
         'comment': comment_receive,
-        'url': url_receive,
+        'url': con_url,
         'title': title,
         'image': image
     }
     db.list.insert_one(doc)
-    return jsonify({'title': title})
+    return jsonify({'msg': '등록완료'})
 
 
 if __name__ == '__main__':

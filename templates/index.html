@@ -172,8 +172,8 @@
               url: '/make_list',
               data: {nick_give: nickname, url_give: url, star_give: star, comment_give: comment},
               success: function (response) {
-                  console.log(response['title'])
                   window.location.reload()
+                  alert(response['msg'])
               }
           });
       }
